@@ -14,7 +14,7 @@
 @implementation MOBoxManager
 {
     NSMapTable *_objectsToBoxes;
-    NSMutableArray* _boxesInUseByJavascript;
+    NSMutableSet* _boxesInUseByJavascript;
     JSContextRef _context;
     
 #if TRACK_JS_IN_USE
@@ -28,7 +28,7 @@
         _runtime = runtime;
         _context = context;
         _objectsToBoxes = [NSMapTable weakToStrongObjectsMapTable];
-        _boxesInUseByJavascript = [NSMutableArray new];
+        _boxesInUseByJavascript = [NSMutableSet new];
 #if TRACK_JS_IN_USE
         _objectsInUseByJavascript = [NSMutableArray new];
 #endif
@@ -70,7 +70,7 @@
     id object = box.representedObject;
     NSAssert([_objectsToBoxes objectForKey:object] != nil, @"box for object is missing");
     [_objectsToBoxes removeObjectForKey:object];
-    NSAssert([_boxesInUseByJavascript indexOfObject:box] != NSNotFound, @"box was not in use");
+    NSAssert([_boxesInUseByJavascript containsObject:box], @"box was not in use");
     [_boxesInUseByJavascript removeObject:box];
 #if TRACK_JS_IN_USE
     NSAssert([self jsObjectIsInUse:box.JSObject], @"js object was not in use");
