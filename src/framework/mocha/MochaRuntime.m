@@ -10,6 +10,7 @@
 #import "MochaRuntime_Private.h"
 
 #import "MOBox.h"
+#import "MOBoxManager.h"
 #import "MOUndefined.h"
 #import "MOMethod_Private.h"
 #import "MOClosure_Private.h"
@@ -78,7 +79,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     JSGlobalContextRef _ctx;
     BOOL _ownsContext;
     NSMutableDictionary *_exportedObjects;
-    MOMapTable *_objectsToBoxes;
+    MOBoxManager *_boxManager;
     NSMutableArray *_frameworkSearchPaths;
 }
 
@@ -205,7 +206,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     if (self) {
         _ctx = ctx;
         _exportedObjects = [[NSMutableDictionary alloc] init];
-        _objectsToBoxes = [MOMapTable mapTableWithStrongToStrongObjects];
+        _boxManager = [[MOBoxManager alloc] initWithRuntime:self context:_ctx];
         _frameworkSearchPaths = [[NSMutableArray alloc] initWithObjects:
                                  @"/System/Library/Frameworks",
                                  @"/Library/Frameworks",
@@ -462,26 +463,16 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
         return NULL;
     }
     
-    JSObjectRef jsObject = NULL;
-    MOBox* box = [_objectsToBoxes objectForKey:object];
-    if (box != nil) {
-        jsObject = [box JSObject];
-    } else {
-        box = [[MOBox alloc] initWithRuntime:self];
-        
+    JSObjectRef jsObject = [_boxManager jsObjectForObject:object classProvider:^JSClassRef(id object) {
         if ([object isKindOfClass:[MOMethod class]]
             || [object isKindOfClass:[MOClosure class]]
             || [object isKindOfClass:[MOBridgeSupportFunction class]]) {
-            jsObject = JSObjectMake(_ctx, MOFunctionClass, (__bridge void *)(box));
+            return MOFunctionClass;
         }
         else {
-            jsObject = JSObjectMake(_ctx, MOBoxedObjectClass, (__bridge void *)(box));
+            return MOBoxedObjectClass;
         }
-        
-        [box associateObject:object jsObject:jsObject context:_ctx];
-        
-        [_objectsToBoxes setObject:box forKey:object];
-    }
+    }];
     
     return jsObject;
 }
@@ -496,11 +487,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
 
 - (void)removeBoxAssociationForObject:(id)object {
     if (object != nil) {
-        MOBox* box = [_objectsToBoxes objectForKey:object];
-        if (box) {
-            [box disassociateObjectInContext:_ctx];
-            [_objectsToBoxes removeObjectForKey:object];
-        }
+        [_boxManager removeBoxForObject:object];
     }
 }
 
