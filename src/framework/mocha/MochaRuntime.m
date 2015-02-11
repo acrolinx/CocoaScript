@@ -975,10 +975,6 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     return MOSelectorFromPropertyName(propertyName);
 }
 
-- (void)finalizeForMochaScript {
-    // no-op
-}
-
 @end
 
 
@@ -1157,35 +1153,11 @@ JSValueRef Mocha_getProperty(JSContextRef ctx, JSObjectRef object, JSStringRef p
 #pragma mark Mocha Objects
 
 static void MOObject_initialize(JSContextRef ctx, JSObjectRef object) {
-    MOBox *private = (__bridge MOBox *)(JSObjectGetPrivate(object));
-    CFRetain((__bridge CFTypeRef)private);
-    
-    if (class_isMetaClass(object_getClass([private representedObject]))) {
-        //debug(@"inited a local class object %@ - going to keep it protected %p", [private representedObject], object);
-//        JSValueProtect(ctx, [private JSObject]);
-    }
-    
 }
 
 static void MOObject_finalize(JSObjectRef object) {
-    MOBox *private = (__bridge MOBox *)(JSObjectGetPrivate(object));
-    id o = [private representedObject];
-    if (o == [NSNumber class]) {
-        NSLog(@"about to finalize NSNumber %p", object);
-    }
-    
-    // Give the object a chance to finalize itself
-    if ([o respondsToSelector:@selector(finalizeForMochaScript)]) {
-        [o finalizeForMochaScript];
-    }
-    
-    // Remove the object association
-    Mocha *runtime = [private runtime];
-    [runtime removeBoxAssociationForObject:o];
-    
-    JSObjectSetPrivate(object, NULL);
-    
-    CFRelease((__bridge CFTypeRef)private);
+    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(object));
+    [box removeFromManager];
 }
 
 

@@ -11,17 +11,17 @@
 #import "MOBridgeSupportSymbol.h"
 #import "MOFunctionArgument.h"
 #import "MOClosure.h"
+#import "MOBoxManager.h"
 
 @implementation MOBox
+{
+    MOBoxManager* _manager;
+}
 
-@synthesize representedObject=_representedObject;
-@synthesize JSObject=_JSObject;
-@synthesize runtime=_runtime;
-
-- (id)initWithRuntime:(Mocha *)runtime {
+- (id)initWithManager:(MOBoxManager *)manager {
     self = [super init];
     if (self) {
-        _runtime = runtime;
+        _manager = manager;
     }
     
     return self;
@@ -33,14 +33,22 @@
     JSValueProtect(context, jsObject); // TODO: this is a temporary hack. It will fix the script crash, but only at the expense of leaking all JS objects during a script run. Which is not good...
 }
 
-- (void)disassociateObjectInContext:(JSContextRef)context {
-//    NSLog(@"disassociated box %p for %p js:%p", self, self.representedObject, self.JSObject);
-//    JSValueUnprotect(context, self.JSObject); // TODO: also a hack
+- (void)removeFromManager {
+    // Give the object a chance to finalize itself
+    if ([_representedObject respondsToSelector:@selector(finalizeForMochaScript)]) {
+        [_representedObject finalizeForMochaScript];
+    }
+
+    //    NSLog(@"disassociated box %p for %p js:%p", self, self.representedObject, self.JSObject);
+    //    JSValueUnprotect(context, self.JSObject); // TODO: also a hack
+    [_manager removeBox:self];
+    _representedObject = nil;
     _JSObject = nil;
 }
 
 - (void)dealloc {
-    NSAssert(_JSObject == nil, @"should have been disassociated");
+    NSAssert(_JSObject == nil, @"should have been cleared");
+    NSAssert(_representedObject == nil, @"should have been cleared");
 }
 
 @end

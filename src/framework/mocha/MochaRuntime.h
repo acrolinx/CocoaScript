@@ -266,16 +266,6 @@
  */
 + (SEL)selectorForMochaPropertyName:(NSString *)propertyName;
 
-/*!
- * @method finalizeForMochaScript
- * @abstract Invoked before the object is dereferenced in the runtime
- * 
- * @discussion
- * This method allows objects to clear internal caches and data tied to
- * other runtime information in preparation for being remove from the runtime.
- */
-- (void)finalizeForMochaScript;
-
 @end
 
 

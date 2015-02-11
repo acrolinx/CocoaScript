@@ -9,8 +9,22 @@
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/JavaScriptCore.h>
 
+@protocol MOBoxProtocol <NSObject>
+@optional
 
-@class Mocha;
+/*!
+ * @method finalizeForMochaScript
+ * @abstract Invoked before the object is dereferenced in the runtime
+ *
+ * @discussion
+ * This method allows objects to clear internal caches and data tied to
+ * other runtime information in preparation for being remove from the runtime.
+ */
+
+- (void)finalizeForMochaScript;
+@end
+
+@class MOBoxManager;
 
 
 /*!
@@ -19,9 +33,9 @@
  */
 @interface MOBox : NSObject
 
-- (id)initWithRuntime:(Mocha*)runtime;
+- (id)initWithManager:(MOBoxManager*)manager;
 - (void)associateObject:(id)object jsObject:(JSObjectRef)jsObject context:(JSContextRef)context;
-- (void)disassociateObjectInContext:(JSContextRef)context;
+- (void)removeFromManager;
 
 /*!
  * @property representedObject
@@ -38,13 +52,5 @@
  * @result A JSObjectRef value
  */
 @property (assign, readonly) JSObjectRef JSObject;
-
-/*!
- * @property runtime
- * @abstract The runtime for the object
- *
- * @result A Mocha object
- */
-@property (weak, readonly) Mocha *runtime;
 
 @end

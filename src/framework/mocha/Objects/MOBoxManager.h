@@ -21,6 +21,5 @@
 
 - (JSObjectRef)jsObjectForObject:(id)object classProvider:(JSClassRef (^)(id object))classProvider;
 - (void)removeBox:(MOBox*)box;
-- (void)removeBoxForObject:(id)object;
 
 @end

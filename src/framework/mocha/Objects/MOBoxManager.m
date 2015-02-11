@@ -12,6 +12,7 @@
 @implementation MOBoxManager
 {
     NSMapTable *_objectsToBoxes;
+    NSMutableArray* _boxesInUseByJavascript;
     JSContextRef _context;
 }
 
@@ -21,6 +22,7 @@
         _runtime = runtime;
         _context = context;
         _objectsToBoxes = [NSMapTable weakToStrongObjectsMapTable];
+        _boxesInUseByJavascript = [NSMutableArray new];
     }
     
     return self;
@@ -32,26 +34,24 @@
     if (box != nil) {
         result = [box JSObject];
     } else {
-        box = [[MOBox alloc] initWithRuntime:_runtime];
+        box = [[MOBox alloc] initWithManager:self];
         JSClassRef jsClass = classProvider(object);
-        result = JSObjectMake(_context, jsClass, (__bridge void *)(box));
+        result = JSObjectMake(_context, jsClass, (__bridge void *)box);
         [box associateObject:object jsObject:result context:_context];
         [_objectsToBoxes setObject:box forKey:object];
+        [_boxesInUseByJavascript addObject:box];
     }
     
     return result;
 }
 
 - (void)removeBox:(MOBox *)box {
-    [self removeBoxForObject:box.representedObject];
-}
+    JSObjectSetPrivate(box.JSObject, NULL);
 
-- (void)removeBoxForObject:(id)object {
-    MOBox* box = [_objectsToBoxes objectForKey:object];
-    if (box) {
-        [box disassociateObjectInContext:_context];
-        [_objectsToBoxes removeObjectForKey:object];
-    }
+    id object = box.representedObject;
+    NSAssert([_objectsToBoxes objectForKey:object] != nil, @"box is missing");
+    [_objectsToBoxes removeObjectForKey:object];
+    [_boxesInUseByJavascript removeObject:box];
 }
 
 @end
