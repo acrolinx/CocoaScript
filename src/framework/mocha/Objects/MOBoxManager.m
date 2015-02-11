@@ -10,6 +10,8 @@
 #import "MOBox.h"
 
 #define TRACK_JS_IN_USE 0
+#define LEAK_STUFF 0
+#define LOG_BOXES 0
 
 @implementation MOBoxManager
 {
@@ -51,6 +53,11 @@
     } else {
         box = [[MOBox alloc] initWithManager:self];
         JSClassRef jsClass = classProvider(object);
+#if LEAK_STUFF
+        result = JSObjectMake(_context, NULL, NULL); // deliberately leaked
+        result = JSObjectMake(_context, NULL, NULL); // deliberately leaked
+        result = JSObjectMake(_context, NULL, NULL); // deliberately leaked
+#endif
         result = JSObjectMake(_context, jsClass, (__bridge void *)box);
         [box associateObject:object jsObject:result context:_context];
         [_objectsToBoxes setObject:box forKey:object];
@@ -59,12 +66,20 @@
         NSAssert(![self jsObjectIsInUse:result], @"js object was already in use");
         [_objectsInUseByJavascript addObject:@((NSInteger)result)];
 #endif
+        
+#if LOG_BOXES
+        NSLog(@"new box %p js %p %p (%@)", box, result, object, [box.representedObject class]);
+#endif
     }
     
     return result;
 }
 
 - (void)removeBox:(MOBox *)box {
+#if LOG_BOXES
+    NSLog(@"removing box %p for %p %p (%@)", box, box.JSObject, box.representedObject, [box.representedObject class]);
+#endif
+    
     JSObjectSetPrivate(box.JSObject, NULL);
 
     id object = box.representedObject;
