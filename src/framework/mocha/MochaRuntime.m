@@ -175,11 +175,24 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     return sharedRuntime;
 }
 
+static Mocha* sSingleRuntimeForNow = nil;
+
+- (void)clearAssociationWithContext {
+//    [self removeObjectWithName:@"__mocha__"];
+    sSingleRuntimeForNow = nil;
+}
+
+- (void)associateRuntimeWithContext {
+    sSingleRuntimeForNow = self;
+//    [self setObject:self withName:@"__mocha__" attributes:(kJSPropertyAttributeReadOnly|kJSPropertyAttributeDontEnum|kJSPropertyAttributeDontDelete)];
+}
+
 + (Mocha *)runtimeWithContext:(JSContextRef)ctx {
-    JSStringRef jsName = JSStringCreateWithUTF8CString("__mocha__");
-    JSValueRef jsValue = JSObjectGetProperty(ctx, JSContextGetGlobalObject(ctx), jsName, NULL);
-    JSStringRelease(jsName);
-    return [self objectForJSValue:jsValue inContext:ctx];
+    return sSingleRuntimeForNow;
+//    JSStringRef jsName = JSStringCreateWithUTF8CString("__mocha__");
+//    JSValueRef jsValue = JSObjectGetProperty(ctx, JSContextGetGlobalObject(ctx), jsName, NULL);
+//    JSStringRelease(jsName);
+//    return [self objectForJSValue:jsValue inContext:ctx];
 }
 
 - (id)init {
@@ -213,7 +226,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
                                  nil];
         
         // Add the runtime as a property of the context
-        [self setObject:self withName:@"__mocha__" attributes:(kJSPropertyAttributeReadOnly|kJSPropertyAttributeDontEnum|kJSPropertyAttributeDontDelete)];
+        [self associateRuntimeWithContext];
         
         // Load builtins
         [self installBuiltins];
@@ -886,8 +899,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     [self setNilValueForKey:@"addFrameworkSearchPath"];
     [self setNilValueForKey:@"objc"];
     [self setNilValueForKey:@"print"];
-    
-    [self removeObjectWithName:@"__mocha__"];
+    [self clearAssociationWithContext];
     
     debug(@"shutting down & releasing %p.", _ctx);
     JSGlobalContextRelease(_ctx);
