@@ -49,8 +49,9 @@
     JSObjectSetPrivate(box.JSObject, NULL);
 
     id object = box.representedObject;
-    NSAssert([_objectsToBoxes objectForKey:object] != nil, @"box is missing");
+    NSAssert([_objectsToBoxes objectForKey:object] != nil, @"box for object is missing");
     [_objectsToBoxes removeObjectForKey:object];
+    NSAssert([_boxesInUseByJavascript indexOfObject:box] != NSNotFound, @"box was not in use");
     [_boxesInUseByJavascript removeObject:box];
 }
 
