@@ -1126,7 +1126,7 @@ static bool MOBoxedObject_hasProperty(JSContextRef ctx, JSObjectRef objectJS, JS
     
 //    Mocha *runtime = [Mocha runtimeWithContext:ctx];
     
-    id object = [MOBoxManager objectForJSObject:objectJS];
+    id object = [MOBoxManager boxedForJSObject:objectJS];
     Class objectClass = [object class];
     
     // String conversion
@@ -1255,7 +1255,7 @@ static JSValueRef MOBoxedObject_getProperty(JSContextRef ctx, JSObjectRef object
     
     Mocha *runtime = [Mocha runtimeWithContext:ctx];
     
-    id object = [MOBoxManager objectForJSObject:objectJS];
+    id object = [MOBoxManager boxedForJSObject:objectJS];
     Class objectClass = [object class];
     
     // Perform the lookup
@@ -1426,7 +1426,7 @@ static bool MOBoxedObject_setProperty(JSContextRef ctx, JSObjectRef objectJS, JS
     
     Mocha *runtime = [Mocha runtimeWithContext:ctx];
     
-    id object = [MOBoxManager objectForJSObject:objectJS];
+    id object = [MOBoxManager boxedForJSObject:objectJS];
     Class objectClass = [object class];
     id value = [runtime objectForJSValue:valueJS];
     
@@ -1484,7 +1484,7 @@ static bool MOBoxedObject_deleteProperty(JSContextRef ctx, JSObjectRef objectJS,
     
     Mocha *runtime = [Mocha runtimeWithContext:ctx];
     
-    id object = [MOBoxManager objectForJSObject:objectJS];
+    id object = [MOBoxManager boxedForJSObject:objectJS];
     
     // Perform the lookup
     @try {
@@ -1516,7 +1516,7 @@ static bool MOBoxedObject_deleteProperty(JSContextRef ctx, JSObjectRef objectJS,
 
 static void MOBoxedObject_getPropertyNames(JSContextRef ctx, JSObjectRef object, JSPropertyNameAccumulatorRef propertyNames) {
     // If we have a dictionary, add keys from allKeys
-    id o = [MOBoxManager objectForJSObject:object];
+    id o = [MOBoxManager boxedForJSObject:object];
     
     if ([o isKindOfClass:[NSDictionary class]]) {
         NSDictionary *dictionary = o;
@@ -1536,7 +1536,7 @@ static JSValueRef MOBoxedObject_convertToType(JSContextRef ctx, JSObjectRef obje
 
 static bool MOBoxedObject_hasInstance(JSContextRef ctx, JSObjectRef constructor, JSValueRef possibleInstance, JSValueRef *exception) {
     Mocha *runtime = [Mocha runtimeWithContext:ctx];
-    id representedObject = [MOBoxManager objectForJSObject:constructor];
+    id representedObject = [MOBoxManager boxedForJSObject:constructor];
     
     if (!JSValueIsObject(ctx, possibleInstance)) {
         return false;
@@ -1546,7 +1546,7 @@ static bool MOBoxedObject_hasInstance(JSContextRef ctx, JSObjectRef constructor,
     if (instanceObj == nil) {
         return NO;
     }
-    id instanceRepresentedObj = [MOBoxManager objectForJSObject:instanceObj];
+    id instanceRepresentedObj = [MOBoxManager boxedForJSObject:instanceObj];
     
     // Check to see if the object's class matches the passed-in class
     @try {
@@ -1578,7 +1578,7 @@ static JSObjectRef MOConstructor_callAsConstructor(JSContextRef ctx, JSObjectRef
 
 static JSValueRef MOFunction_callAsFunction(JSContextRef ctx, JSObjectRef functionJS, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception) {
     Mocha *runtime = [Mocha runtimeWithContext:ctx];
-    id function = [MOBoxManager objectForJSObject:functionJS];
+    id function = [MOBoxManager boxedForJSObject:functionJS];
     JSValueRef value = NULL;
     
 //    if ([function isKindOfClass:[MOMethod class]]) {

@@ -63,10 +63,11 @@
 
 + (MOBox*)boxForJSObject:(JSObjectRef)jsObject {
     MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    NSAssert([box isKindOfClass:[MOBox class]], @"unexpected associated object");
     return box;
 }
 
-+ (id)objectForJSObject:(JSObjectRef)jsObject {
++ (id)boxedForJSObject:(JSObjectRef)jsObject {
     MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
     NSAssert([box isKindOfClass:[MOBox class]], @"unexpected associated object");
     return [box representedObject];
@@ -74,6 +75,7 @@
 
 + (Class)classForJSObject:(JSObjectRef)jsObject {
     MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    NSAssert([box isKindOfClass:[MOBox class]], @"unexpected associated object");
     return [[box representedObject] class];
 }
 

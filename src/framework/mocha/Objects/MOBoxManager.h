@@ -24,7 +24,7 @@
 
 + (id)privateForJSObject:(JSObjectRef)jsObject isBox:(BOOL*)isBox;
 + (MOBox*)boxForJSObject:(JSObjectRef)jsObject;
-+ (id)objectForJSObject:(JSObjectRef)jsObject;
++ (id)boxedForJSObject:(JSObjectRef)jsObject;
 + (Class)classForJSObject:(JSObjectRef)jsObject;
 
 + (void)assertBoxValidForJSObject:(JSObjectRef)jsObject representsObject:(id)object;
