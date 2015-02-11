@@ -34,7 +34,6 @@
 
 // JSObject <-> id
 - (JSObjectRef)boxedJSObjectForObject:(id)object;
-- (id)unboxedObjectForJSObject:(JSObjectRef)jsObject;
 
 // Object storage
 - (id)objectWithName:(NSString *)name;

@@ -22,4 +22,11 @@
 - (JSObjectRef)jsObjectForObject:(id)object classProvider:(JSClassRef (^)(id object))classProvider;
 - (void)removeBox:(MOBox*)box;
 
++ (id)privateForJSObject:(JSObjectRef)jsObject isBox:(BOOL*)isBox;
++ (MOBox*)boxForJSObject:(JSObjectRef)jsObject;
++ (id)objectForJSObject:(JSObjectRef)jsObject;
++ (Class)classForJSObject:(JSObjectRef)jsObject;
+
++ (void)assertBoxValidForJSObject:(JSObjectRef)jsObject representsObject:(id)object;
+
 @end

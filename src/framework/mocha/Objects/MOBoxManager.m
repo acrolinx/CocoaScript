@@ -54,4 +54,32 @@
     [_boxesInUseByJavascript removeObject:box];
 }
 
++ (id)privateForJSObject:(JSObjectRef)jsObject isBox:(BOOL*)isBox {
+    id private = (__bridge id)(JSObjectGetPrivate(jsObject));
+    if (isBox)
+        *isBox = [private isKindOfClass:[MOBox class]];
+    return private;
+}
+
++ (MOBox*)boxForJSObject:(JSObjectRef)jsObject {
+    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    return box;
+}
+
++ (id)objectForJSObject:(JSObjectRef)jsObject {
+    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    NSAssert([box isKindOfClass:[MOBox class]], @"unexpected associated object");
+    return [box representedObject];
+}
+
++ (Class)classForJSObject:(JSObjectRef)jsObject {
+    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    return [[box representedObject] class];
+}
+
++ (void)assertBoxValidForJSObject:(JSObjectRef)jsObject representsObject:(id)object {
+    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(jsObject));
+    NSAssert([box representedObject] == object, @"wrong object represented");
+}
+
 @end

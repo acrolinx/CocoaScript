@@ -23,6 +23,7 @@
 #import "MOBridgeSupportSymbol.h"
 
 #import "MOBox.h"
+#import "MOBoxManager.h"
 #import "MOAllocator.h"
 
 #import <objc/runtime.h>
@@ -40,7 +41,7 @@
 #pragma mark Values
 
 JSValueRef MOJSValueToType(JSContextRef ctx, JSObjectRef objectJS, JSType type, JSValueRef *exception) {
-    MOBox *box = (__bridge MOBox *)(JSObjectGetPrivate(objectJS));
+    MOBox *box = [MOBoxManager boxForJSObject:objectJS];
     if (box != nil) {
         // Boxed object
         id object = [box representedObject];

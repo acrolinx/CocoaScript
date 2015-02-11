@@ -13,6 +13,7 @@
 
 #import <ScriptingBridge/ScriptingBridge.h>
 #import "MochaRuntime.h"
+#import "MOBoxManager.h"
 #import "MOMethod.h"
 #import "MOUndefined.h"
 #import "MOBridgeSupportController.h"
@@ -415,9 +416,7 @@ NSString *currentCOScriptThreadIdentifier = @"org.jstalk.currentCOScriptHack";
     if (value) {
         
         JSObjectRef jsObject = JSValueToObject([_mochaRuntime context], value, NULL);
-        id private = (__bridge id)JSObjectGetPrivate(jsObject);
-        
-        assert([private representedObject] == o);
+        [MOBoxManager assertBoxValidForJSObject:jsObject representsObject:o];
         
         debug(@"COS unprotecting %@", o);
         JSValueUnprotect([_mochaRuntime context], value);
@@ -439,9 +438,7 @@ NSString *currentCOScriptThreadIdentifier = @"org.jstalk.currentCOScriptHack";
         
         debug(@"COS protecting %@ / v: %p o: %p", o, value, jsObject);
         
-        id private = (__bridge id)JSObjectGetPrivate(jsObject);
-        
-        assert([private representedObject] == o);
+        [MOBoxManager assertBoxValidForJSObject:jsObject representsObject:o];
         
         JSValueProtect([_mochaRuntime context], value);
     }
