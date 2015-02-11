@@ -9,11 +9,17 @@
 #import "MOBoxManager.h"
 #import "MOBox.h"
 
+#define TRACK_JS_IN_USE 0
+
 @implementation MOBoxManager
 {
     NSMapTable *_objectsToBoxes;
     NSMutableArray* _boxesInUseByJavascript;
     JSContextRef _context;
+    
+#if TRACK_JS_IN_USE
+    NSMutableArray* _objectsInUseByJavascript;
+#endif
 }
 
 - (id)initWithRuntime:(Mocha *)runtime context:(JSContextRef)context {
@@ -23,10 +29,19 @@
         _context = context;
         _objectsToBoxes = [NSMapTable weakToStrongObjectsMapTable];
         _boxesInUseByJavascript = [NSMutableArray new];
+#if TRACK_JS_IN_USE
+        _objectsInUseByJavascript = [NSMutableArray new];
+#endif
     }
     
     return self;
 }
+
+#if TRACK_JS_IN_USE
+- (BOOL)jsObjectIsInUse:(JSObjectRef)jsObject {
+    return [_objectsInUseByJavascript indexOfObject:@((NSInteger)jsObject)] != NSNotFound;
+}
+#endif
 
 - (JSObjectRef)jsObjectForObject:(id)object classProvider:(JSClassRef (^)(id object))classProvider {
     JSObjectRef result = nil;
@@ -40,6 +55,10 @@
         [box associateObject:object jsObject:result context:_context];
         [_objectsToBoxes setObject:box forKey:object];
         [_boxesInUseByJavascript addObject:box];
+#if TRACK_JS_IN_USE
+        NSAssert(![self jsObjectIsInUse:result], @"js object was already in use");
+        [_objectsInUseByJavascript addObject:@((NSInteger)result)];
+#endif
     }
     
     return result;
@@ -53,6 +72,10 @@
     [_objectsToBoxes removeObjectForKey:object];
     NSAssert([_boxesInUseByJavascript indexOfObject:box] != NSNotFound, @"box was not in use");
     [_boxesInUseByJavascript removeObject:box];
+#if TRACK_JS_IN_USE
+    NSAssert([self jsObjectIsInUse:box.JSObject], @"js object was not in use");
+    [_objectsInUseByJavascript removeObject:@((NSInteger)box.JSObject)];
+#endif
 }
 
 + (id)privateForJSObject:(JSObjectRef)jsObject isBox:(BOOL*)isBox {
