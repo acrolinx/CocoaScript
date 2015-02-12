@@ -76,6 +76,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
 
 
 @implementation Mocha {
+    JSContext *_ctxObject;
     JSGlobalContextRef _ctx;
     BOOL _ownsContext;
     NSMutableDictionary *_exportedObjects;
@@ -218,8 +219,9 @@ static Mocha* sSingleRuntimeForNow = nil;
     self = [super init];
     if (self) {
         _ctx = ctx;
+        _ctxObject = [JSContext contextWithJSGlobalContextRef:ctx];
         _exportedObjects = [[NSMutableDictionary alloc] init];
-        _boxManager = [[MOBoxManager alloc] initWithRuntime:self context:_ctx];
+        _boxManager = [[MOBoxManager alloc] initWithRuntime:self context:_ctx contextObject:_ctxObject];
         _frameworkSearchPaths = [[NSMutableArray alloc] initWithObjects:
                                  @"/System/Library/Frameworks",
                                  @"/Library/Frameworks",
@@ -1593,6 +1595,10 @@ static JSValueRef MOFunction_callAsFunction(JSContextRef ctx, JSObjectRef functi
     id function = [MOBoxManager boxedForJSObject:functionJS];
     JSValueRef value = NULL;
     
+    static NSInteger sCallCounter = 0;
+    if (++sCallCounter == 14606) {
+        NSLog(@"blah");
+    }
 //    if ([function isKindOfClass:[MOMethod class]]) {
 //    
 //        MOMethod *method = function;
@@ -1608,7 +1614,13 @@ static JSValueRef MOFunction_callAsFunction(JSContextRef ctx, JSObjectRef functi
     
     // Perform the invocation
     @try {
+        JSValueProtect(ctx, functionJS);
+        JSValueProtect(ctx, thisObject);
+        for (int n = 0; n < argumentCount; ++n) JSValueProtect(ctx, arguments[n]);
         value = MOFunctionInvoke(function, ctx, argumentCount, arguments, exception);
+        for (int n = 0; n < argumentCount; ++n) JSValueUnprotect(ctx, arguments[n]);
+        JSValueUnprotect(ctx, functionJS);
+        JSValueUnprotect(ctx, thisObject);
     }
     @catch (NSException *e) {
         // Catch ObjC exceptions and propogate them up as JS exceptions

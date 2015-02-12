@@ -203,7 +203,7 @@
         
         // +16 for alignment
         // +4 for tail padding
-        // size = [MOFunctionArgument sizeOfStructureTypeEncoding:_structureTypeEncoding] + 16 + 4;
+        //size = [MOFunctionArgument sizeOfStructureTypeEncoding:_structureTypeEncoding] + 16 + 4;
         size = [MOFunctionArgument sizeOfStructureTypeEncoding:_structureTypeEncoding] + 4;
         success = YES;
     }
@@ -953,9 +953,11 @@ typedef struct { char a; BOOL b; } struct_C_BOOL;
             c++;
             char encoding = *c;
             
+            JSValueProtect(ctx, object);
             JSStringRef propertyNameJS = JSStringCreateWithUTF8CString([propertyName UTF8String]);
             JSValueRef valueJS = JSObjectGetProperty(ctx, object, propertyNameJS, NULL);
             JSStringRelease(propertyNameJS);
+            JSValueUnprotect(ctx, object);
             
             if (encoding == '{') {
                 if (JSValueIsObject(ctx, valueJS)) {

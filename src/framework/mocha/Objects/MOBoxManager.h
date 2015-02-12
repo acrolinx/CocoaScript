@@ -15,7 +15,7 @@
 
 @interface MOBoxManager : NSObject
 
-- (id)initWithRuntime:(Mocha*)runtime context:(JSContextRef)context;
+- (id)initWithRuntime:(Mocha*)runtime context:(JSContextRef)context contextObject:(JSContext*)contextO;
 
 @property (weak, readonly) Mocha *runtime;
 

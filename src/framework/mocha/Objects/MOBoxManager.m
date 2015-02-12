@@ -13,22 +13,24 @@
 #define LEAK_STUFF 0
 #define LOG_BOXES 0
 
-@implementation MOBoxManager
-{
-    NSMapTable *_objectsToBoxes;
-    NSMutableSet* _boxesInUseByJavascript;
-    JSContextRef _context;
-    
+@interface MOBoxManager()
+@property (strong, nonatomic) JSContext *contextObject;
+@property (strong, nonatomic) NSMapTable *objectsToBoxes;
+@property (strong, nonatomic) NSMutableSet* boxesInUseByJavascript;
+@property (assign, nonatomic) JSContextRef context;
 #if TRACK_JS_IN_USE
-    NSMutableArray* _objectsInUseByJavascript;
+@property (strong, nonatomic) NSMutableArray* objectsInUseByJavascript;
 #endif
-}
+@end
 
-- (id)initWithRuntime:(Mocha *)runtime context:(JSContextRef)context {
+@implementation MOBoxManager
+
+- (id)initWithRuntime:(Mocha *)runtime context:(JSContextRef)context contextObject:(JSContext*)contextO {
     self = [super init];
     if (self) {
         _runtime = runtime;
         _context = context;
+        _contextObject = contextO;
         _objectsToBoxes = [NSMapTable weakToStrongObjectsMapTable];
         _boxesInUseByJavascript = [NSMutableSet new];
 #if TRACK_JS_IN_USE
@@ -45,11 +47,12 @@
 }
 #endif
 
+
 - (JSObjectRef)jsObjectForObject:(id)object classProvider:(JSClassRef (^)(id object))classProvider {
     JSObjectRef result = nil;
     MOBox* box = [_objectsToBoxes objectForKey:object];
     if (box != nil) {
-        result = [box JSObject];
+        result = box.JSObject;
     } else {
         box = [[MOBox alloc] initWithManager:self];
         JSClassRef jsClass = classProvider(object);
@@ -58,10 +61,13 @@
         result = JSObjectMake(_context, NULL, NULL); // deliberately leaked
         result = JSObjectMake(_context, NULL, NULL); // deliberately leaked
 #endif
+    
         result = JSObjectMake(_context, jsClass, (__bridge void *)box);
-        [box associateObject:object jsObject:result context:_context];
+        JSManagedValue* value = [[JSManagedValue alloc] initWithValue:[JSValue valueWithJSValueRef:result inContext:_contextObject]];
+        [box associateObject:object value:value];
         [_objectsToBoxes setObject:box forKey:object];
         [_boxesInUseByJavascript addObject:box];
+        [[_contextObject virtualMachine] addManagedReference:value withOwner:box];
 #if TRACK_JS_IN_USE
         NSAssert(![self jsObjectIsInUse:result], @"js object was already in use");
         [_objectsInUseByJavascript addObject:@((NSInteger)result)];
@@ -80,6 +86,7 @@
     NSLog(@"removing box %p for %p %p (%@)", box, box.JSObject, box.representedObject, [box.representedObject class]);
 #endif
     
+    [[_contextObject virtualMachine] removeManagedReference:box.value withOwner:box];
     JSObjectSetPrivate(box.JSObject, NULL);
 
     id object = box.representedObject;

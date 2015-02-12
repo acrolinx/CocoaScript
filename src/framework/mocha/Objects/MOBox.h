@@ -34,7 +34,7 @@
 @interface MOBox : NSObject
 
 - (id)initWithManager:(MOBoxManager*)manager;
-- (void)associateObject:(id)object jsObject:(JSObjectRef)jsObject context:(JSContextRef)context;
+- (void)associateObject:(id)object value:(JSManagedValue*)value;
 - (void)removeFromManager;
 
 /*!
@@ -51,6 +51,8 @@
  *
  * @result A JSObjectRef value
  */
-@property (assign, readonly) JSObjectRef JSObject;
+@property (strong, readonly) JSManagedValue *value;
+
+- (JSObjectRef)JSObject;
 
 @end

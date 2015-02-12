@@ -13,6 +13,11 @@
 #import "MOClosure.h"
 #import "MOBoxManager.h"
 
+#import <JavaScriptCore/JSContext.h>
+
+@interface MOBox()
+@end
+
 @implementation MOBox
 {
     MOBoxManager* _manager;
@@ -27,13 +32,19 @@
     return self;
 }
 
-- (void)associateObject:(id)object jsObject:(JSObjectRef)jsObject context:(JSContextRef)context {
+- (JSObjectRef)JSObject {
+    return (JSObjectRef)[[[self value] value] JSValueRef];
+}
+
+- (void)associateObject:(id)object value:(JSManagedValue*)value {
     _representedObject = object;
-    _JSObject = jsObject;
-    JSValueProtect(context, jsObject); // TODO: this is a temporary hack. It will fix the script crash, but only at the expense of leaking all JS objects during a script run. Which is not good...
+    _value = value;
+    
+//    JSValueProtect(context, jsObject); // TODO: this is a temporary hack. It will fix the script crash, but only at the expense of leaking all JS objects during a script run. Which is not good...
 }
 
 - (void)removeFromManager {
+
     // Give the object a chance to finalize itself
     if ([_representedObject respondsToSelector:@selector(finalizeForMochaScript)]) {
         [_representedObject finalizeForMochaScript];
@@ -43,11 +54,11 @@
     //    JSValueUnprotect(context, self.JSObject); // TODO: also a hack
     [_manager removeBox:self];
     _representedObject = nil;
-    _JSObject = nil;
+    _value = nil;
 }
 
 - (void)dealloc {
-    NSAssert(_JSObject == nil, @"should have been cleared");
+    NSAssert(_value == nil, @"should have been cleared");
     NSAssert(_representedObject == nil, @"should have been cleared");
 }
 

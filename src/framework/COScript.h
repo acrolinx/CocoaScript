@@ -7,6 +7,9 @@
 //
 
 #import <Cocoa/Cocoa.h>
+
+#define JSC_OBJC_API_ENABLED 1
+
 #import <JavaScriptCore/JavaScriptCore.h>
 
 @class Mocha;
