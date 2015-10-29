@@ -76,6 +76,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     JSGlobalContextRef _ctx;
     BOOL _ownsContext;
     NSMutableDictionary *_exportedObjects;
+    NSMutableDictionary *_objectsToBoxes;
     NSMutableArray *_frameworkSearchPaths;
 }
 
@@ -202,6 +203,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     if (self) {
         _ctx = ctx;
         _exportedObjects = [[NSMutableDictionary alloc] init];
+        _objectsToBoxes = [NSMutableDictionary new];
         _frameworkSearchPaths = [[NSMutableArray alloc] initWithObjects:
                                  @"/System/Library/Frameworks",
                                  @"/Library/Frameworks",
@@ -459,7 +461,8 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     }
     
     JSObjectRef jsObject = NULL;
-    MOBox *box = [MOBox boxForObject:object];
+    NSValue *objectPointerValue = [NSValue valueWithPointer:(__bridge const void *)(object)];
+    MOBox* box = [_objectsToBoxes objectForKey:objectPointerValue];
     if (box != nil) {
         jsObject = [box JSObject];
     } else {
@@ -475,6 +478,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
         }
         
         [box associateObject:object jsObject:jsObject context:_ctx];
+        [_objectsToBoxes setObject:box forKey: objectPointerValue];
     }
     
     return jsObject;
@@ -490,8 +494,15 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
 
 - (void)removeBoxAssociationForObject:(id)object {
     if (object != nil) {
-        MOBox *box = [MOBox boxForObject:object];
+        [self removeBoxForObjectPointerValue:[NSValue valueWithPointer:(__bridge const void *)(object)]];
+    }
+}
+
+- (void)removeBoxForObjectPointerValue:(NSValue *)objectPointerValue {
+    MOBox* box = [_objectsToBoxes objectForKey:objectPointerValue];
+    if (box) {
         [box disassociateObjectInContext:_ctx];
+        [_objectsToBoxes removeObjectForKey:objectPointerValue];
     }
 }
 
