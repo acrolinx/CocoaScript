@@ -418,8 +418,12 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
 }
 
 - (JSValueRef)JSValueForObject:(id)object {
-    JSValueRef value = NULL;
+    return [self JSValueForObject:object shouldCreateBox:YES];
+}
 
+- (JSValueRef)JSValueForObject:(id)object shouldCreateBox:(BOOL)shouldCreateBox {
+    JSValueRef value = NULL;
+    
     if ([object isKindOfClass:[MOBox class]]) {
         value = [object JSObject];
     }
@@ -427,18 +431,18 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
         return [object JSObject];
     }
     /*else if ([object isKindOfClass:[NSString class]]) {
-        JSStringRef string = JSStringCreateWithCFString((CFStringRef)object);
-        value = JSValueMakeString(_ctx, string);
-        JSStringRelease(string);
-    }
-    else if ([object isKindOfClass:[NSNumber class]]) {
-        double doubleValue = [object doubleValue];
-        value = JSValueMakeNumber(_ctx, doubleValue);
-    }*/
+     JSStringRef string = JSStringCreateWithCFString((CFStringRef)object);
+     value = JSValueMakeString(_ctx, string);
+     JSStringRelease(string);
+     }
+     else if ([object isKindOfClass:[NSNumber class]]) {
+     double doubleValue = [object doubleValue];
+     value = JSValueMakeNumber(_ctx, doubleValue);
+     }*/
     else if ([object isKindOfClass:NSClassFromString(@"NSBlock")]) {
         // Auto-box blocks inside of a closure object
         MOClosure *closure = [MOClosure closureWithBlock:object];
-        value = [self boxedJSObjectForObject:closure];
+        value = [self boxedJSObjectForObject:closure shouldCreateBox:shouldCreateBox];
     }
     else if (object == nil/* || [object isKindOfClass:[NSNull class]]*/) {
         value = JSValueMakeNull(_ctx);
@@ -446,11 +450,11 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     else if (object == [MOUndefined undefined]) {
         value = JSValueMakeUndefined(_ctx);
     }
-
+    
     if (value == NULL) {
-        value = [self boxedJSObjectForObject:object];
+        value = [self boxedJSObjectForObject:object shouldCreateBox:shouldCreateBox];
     }
-
+    
     return value;
 }
 
@@ -462,7 +466,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     return [Mocha objectForJSValue:value inContext:_ctx unboxObjects:unboxObjects];
 }
 
-- (JSObjectRef)boxedJSObjectForObject:(id)object {
+- (JSObjectRef)boxedJSObjectForObject:(id)object shouldCreateBox:(BOOL)shouldCreateBox {
     if (object == nil) {
         return NULL;
     }
@@ -471,7 +475,7 @@ NSString * const MOAlreadyProtectedKey = @"moAlreadyProtectedKey";
     MOBox* box = [_boxManager boxForObject:object];
     if (box != nil) {
         jsObject = [box JSObject];
-    } else {
+    } else if (shouldCreateBox) {
         JSClassRef jsClass;
         if ([object isKindOfClass:[MOMethod class]]
             || [object isKindOfClass:[MOClosure class]]
@@ -1640,6 +1644,7 @@ static JSObjectRef MOConstructor_callAsConstructor(JSContextRef ctx, JSObjectRef
 static JSValueRef MOFunction_callAsFunction(JSContextRef ctx, JSObjectRef functionJS, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception) {
     id function = objectForJSObject(functionJS);
     JSValueRef value = NULL;
+    JSValueRef error = NULL;
 
     //    if ([function isKindOfClass:[MOMethod class]]) {
 //
@@ -1656,15 +1661,24 @@ static JSValueRef MOFunction_callAsFunction(JSContextRef ctx, JSObjectRef functi
 
     // Perform the invocation
     @try {
-        value = MOFunctionInvoke(function, ctx, argumentCount, arguments, exception);
+        value = MOFunctionInvoke(function, ctx, argumentCount, arguments, &error);
     }
     @catch (NSException *e) {
         debug(@"caught exception whilst invoking function %@: %@", function, e);
-
-        // Catch ObjC exceptions and propogate them up as JS exceptions
-        if (exception != nil) {
-            *exception = [[Mocha runtimeWithContext:ctx] JSValueForObject:e];
-        }
+        
+        error = [[Mocha runtimeWithContext:ctx] JSValueForObject:e];
+    }
+    
+    // Catch ObjC exceptions and propogate them up as JS exceptions
+    if (error != NULL) {
+        JSStringRef errorMessage = JSStringCreateWithUTF8CString("An Obj-C exception occurred.");
+        JSValueRef argument = JSValueMakeString(ctx, errorMessage);
+        *exception = JSObjectMakeError(ctx, 1, &argument, NULL);
+        JSStringRelease(errorMessage);
+        
+        JSStringRef propertyName = JSStringCreateWithUTF8CString("nativeException");
+        JSObjectSetProperty(ctx, (JSObjectRef)*exception, propertyName, error, kJSPropertyAttributeNone, NULL);
+        JSStringRelease(propertyName);
     }
 
     return value;

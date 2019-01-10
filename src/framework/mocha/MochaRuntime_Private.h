@@ -28,12 +28,13 @@
 + (NSDictionary *)dictionaryForJSHash:(JSObjectRef)hashValue inContext:(JSContextRef)ctx;
 
 - (JSValueRef)JSValueForObject:(id)object;
+- (JSValueRef)JSValueForObject:(id)object shouldCreateBox:(BOOL)shouldCreateBox;
 
 - (id)objectForJSValue:(JSValueRef)value;
 - (id)objectForJSValue:(JSValueRef)value unboxObjects:(BOOL)unboxObjects;
 
 // JSObject <-> id
-- (JSObjectRef)boxedJSObjectForObject:(id)object;
+- (JSObjectRef)boxedJSObjectForObject:(id)object shouldCreateBox:(BOOL)shouldCreateBox;
 - (id)unboxedObjectForJSObject:(JSObjectRef)jsObject;
 
 // Object storage
